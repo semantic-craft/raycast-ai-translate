@@ -1,6 +1,5 @@
 import { environment, getPreferenceValues, showHUD, showToast, Toast } from "@raycast/api";
 import { ChildProcess, execFile } from "node:child_process";
-import { unlink } from "node:fs";
 import { mkdir, readdir, stat, unlink as unlinkAsync, writeFile } from "node:fs/promises";
 import { join } from "node:path";
 import { loadRuntimeSettings } from "./runtime-settings";
@@ -382,14 +381,14 @@ async function playWav(wavData: Buffer, signal?: AbortSignal): Promise<void> {
   await writeFile(audioPath, wavData);
 
   if (signal?.aborted) {
-    unlink(audioPath, () => undefined);
+    void unlinkAsync(audioPath).catch(() => undefined);
     throw abortError("Playback aborted");
   }
 
   await new Promise<void>((resolve, reject) => {
     const child = execFile("/usr/bin/afplay", [audioPath], (error) => {
       signal?.removeEventListener("abort", abortPlayback);
-      unlink(audioPath, () => undefined);
+      void unlinkAsync(audioPath).catch(() => undefined);
       if (activePlayback === child) {
         activePlayback = undefined;
       }
