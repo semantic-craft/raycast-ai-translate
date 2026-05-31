@@ -4,6 +4,7 @@ import { unlink } from "node:fs";
 import { mkdir, readdir, stat, unlink as unlinkAsync, writeFile } from "node:fs/promises";
 import { join } from "node:path";
 import { loadRuntimeSettings } from "./runtime-settings";
+import { GEMINI_TTS_MODEL, QWEN_TTS_DEFAULT_MODEL, QWEN_TTS_INSTRUCT_MODEL, resolveTTSModel } from "./tts-models";
 
 const STALE_AUDIO_MS = 10 * 60 * 1000;
 
@@ -32,12 +33,9 @@ async function sweepStaleAudio(): Promise<void> {
   }
 }
 
-const GEMINI_TTS_MODEL = "gemini-3.1-flash-tts-preview";
 const GEMINI_TTS_BASE_URL = "https://generativelanguage.googleapis.com/v1beta";
 const GEMINI_DEFAULT_VOICE = "Kore";
 
-const QWEN_TTS_DEFAULT_MODEL = "qwen3-tts-flash";
-const QWEN_TTS_INSTRUCT_MODEL = "qwen3-tts-instruct-flash";
 const QWEN_TTS_DEFAULT_BASE_URL = "https://dashscope.aliyuncs.com/api/v1";
 const QWEN_TTS_DEFAULT_VOICE = "Cherry";
 const QWEN_TTS_DEFAULT_LANGUAGE_TYPE = "Auto";
@@ -132,7 +130,8 @@ export async function speakText(text: string, options: SpeakOptions = {}): Promi
   if (!trimmed) return;
 
   const preferences = getPreferenceValues<Preferences>();
-  const { ttsProvider } = await loadRuntimeSettings();
+  const { ttsProvider, ttsModel } = await loadRuntimeSettings();
+  const resolvedTtsModel = resolveTTSModel(ttsProvider, ttsModel, preferences);
   const slow = Boolean(options.slow);
   const chunks = ttsProvider === "qwen" ? splitTextForQwen(trimmed) : [trimmed];
 
@@ -142,8 +141,7 @@ export async function speakText(text: string, options: SpeakOptions = {}): Promi
   // Slow is delivered as an extra instruction line: Gemini always honors it,
   // but Qwen only does when the Instruct model is selected. We label the
   // toast so the user can tell when a slow press was dropped.
-  const slowEffective =
-    slow && (ttsProvider !== "qwen" || normalizeQwenModel(preferences.qwenTTSModel) === QWEN_TTS_INSTRUCT_MODEL);
+  const slowEffective = slow && (ttsProvider !== "qwen" || resolvedTtsModel === QWEN_TTS_INSTRUCT_MODEL);
   const slowDropped = slow && !slowEffective;
   const toast = await showToast({
     style: Toast.Style.Animated,
@@ -162,7 +160,7 @@ export async function speakText(text: string, options: SpeakOptions = {}): Promi
       try {
         wav =
           ttsProvider === "qwen"
-            ? await synthesizeWithQwen(chunk, slow, preferences, controller.signal)
+            ? await synthesizeWithQwen(chunk, slow, resolvedTtsModel as QwenTTSModel, preferences, controller.signal)
             : await synthesizeWithGemini(chunk, slow, preferences, controller.signal);
       } finally {
         clearTimeout(timeout);
@@ -251,6 +249,7 @@ async function synthesizeWithGemini(
 async function synthesizeWithQwen(
   text: string,
   slow: boolean,
+  model: QwenTTSModel,
   preferences: Preferences,
   signal: AbortSignal,
 ): Promise<Buffer | undefined> {
@@ -264,7 +263,6 @@ async function synthesizeWithQwen(
     return undefined;
   }
 
-  const model = normalizeQwenModel(preferences.qwenTTSModel);
   const voice = preferences.qwenTTSVoice?.trim() || QWEN_TTS_DEFAULT_VOICE;
   const languageType = normalizeQwenLanguageType(preferences.qwenTTSLanguageType);
   const instructions = buildQwenInstructions(model, preferences.qwenTTSInstructions, slow);
@@ -330,10 +328,6 @@ function qwenGenerationUrl(baseURL: string | undefined): string {
     return trimmed;
   }
   return `${trimmed}/services/aigc/multimodal-generation/generation`;
-}
-
-function normalizeQwenModel(model: string | undefined): QwenTTSModel {
-  return model === QWEN_TTS_INSTRUCT_MODEL ? QWEN_TTS_INSTRUCT_MODEL : QWEN_TTS_DEFAULT_MODEL;
 }
 
 function normalizeQwenLanguageType(languageType: string | undefined): QwenTTSLanguageType {
