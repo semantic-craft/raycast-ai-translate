@@ -13,7 +13,7 @@ It does not try to replace professional translation, legal review, or careful hu
 - **Capture text and translate**: capture a screen region, extract text with OCR, review the result, and translate it.
 - **Standalone OCR**: use `Capture Text` to capture, edit, copy, strip line breaks, auto-paragraph, or send the text to translation.
 - **History**: browse recent translations you copied or pasted. Older rewrite entries from previous versions remain visible locally.
-- **Settings**: adjust active provider, default model, prompt profile, translation style, voice provider/model, and custom instructions without digging through every provider setting.
+- **Settings**: set the default provider/model used by translation and capture prompts, then tune prompt profile, translation style, OCR, voice provider/model, and custom instructions without digging through every provider setting.
 
 ## Main Commands
 
@@ -25,7 +25,7 @@ It does not try to replace professional translation, legal review, or careful hu
 | `Capture Text & Copy`      | No-view | Capture a region, OCR it, and copy the text to the clipboard.                              | 截图取字并直接复制到剪贴板。                                               |
 | `Capture Text`             | View    | Extract text from a screenshot and clean or copy the result.                               | 从截图中提取文字，并做换行整理、自动分段或复制。                           |
 | `History`                  | View    | Revisit recent translation results. Older rewrite entries remain visible.                  | 查看最近复制或粘贴过的翻译记录；旧版本的改写记录仍可回看。                 |
-| `Settings`                 | View    | Configure active provider, default model, prompt profile, style, voice, and instructions.  | 配置 provider 范围、默认模型、提示词场景、翻译风格、朗读声音和自定义说明。 |
+| `Settings`                 | View    | Configure durable defaults for provider/model, prompt profile, style, OCR, voice, and instructions. | 配置稳定默认值：provider/model、提示词场景、翻译风格、OCR、朗读声音和自定义说明。 |
 
 ## Division with Say It Right
 
@@ -45,7 +45,7 @@ AI Translate is a bring-your-own-key extension. You decide which providers to en
 | Gemini           | `gemini-3.5-flash`  | `gemini-3.1-pro-preview` | Google `https://generativelanguage.googleapis.com/v1beta`                                                                                                                                                |
 | OpenAI / ChatGPT | `gpt-4.1-mini`      | `gpt-4.1`                | OpenAI Chat Completions `https://api.openai.com/v1`; GPT-5.x reasoning models (`gpt-5.5`, `gpt-5.4`, `gpt-5.4-mini`, `gpt-5.4-nano`) are sent with `reasoning_effort: "minimal"` for translation latency |
 
-Provider credentials and durable defaults live in Raycast preferences: default provider, default model, API key, base URL, custom model name, timeout, and provider order. Day-to-day choices live in the extension UI: switch between **All Enabled Providers** and a **Single Provider**, choose **Fast**, **Best**, or **Custom** model defaults, or pick a specific provider model from the action panel. `Custom` uses the model IDs you enter in preferences, which is useful when providers add new models before the extension is updated. The default model is shared by Translate Text, Translate & Paste, and Capture Text & Translate.
+Provider credentials and durable defaults live in Raycast preferences and the **Settings** command: default provider, default model tier, API key, base URL, custom model name, timeout, and provider order. Day-to-day choices live in the extension UI: switch between **All Enabled Providers** and a **Single Provider**, choose **Fast**, **Best**, or **Custom** model defaults, or pick a specific provider model from the action panel. `Custom` uses the model IDs you enter in preferences, which is useful when providers add new models before the extension is updated. The default model is shared by `Translate Text`, `Translate & Paste`, and `Capture Text & Translate`; expression coaching belongs in **Say It Right**.
 
 For the Anthropic-compatible endpoints (DeepSeek v4 and MiMo v2.5), the extension explicitly sends `thinking: { type: "disabled" }`. Those families default to thinking-on, which adds first-token latency and silently ignores `temperature`; disabling thinking keeps translation responses snappy and respects the configured style.
 
@@ -62,6 +62,8 @@ You can still make the output more constrained when needed:
 - **Custom Prompt Instructions**: add your own glossary, audience, tone, or formatting rule.
 
 These settings are meant to help with different reading and writing situations. They are not a guarantee of correctness, especially for specialized legal, academic, medical, or technical material.
+
+Every built-in translation prompt includes SkillOpt-style validation gates before the model returns its final answer: preserve source meaning, avoid invented context, repair only obvious OCR artifacts, keep the target language natural, and return the translation only. The gates are guardrails, not a substitute for human review.
 
 ## OCR
 
@@ -95,7 +97,7 @@ AI Translate 是一个比较轻量的 Raycast 扩展，主要服务三个日常�
 - **可比较多个 provider 的输出**：开启多个 provider 后，可以在同一个列表里看不同模型的结果、耗时和状态。
 - **支持快速替换工作流**：`Translate & Paste` 适合绑定全局快捷键，直接把结果粘回原位置。
 - **保留本地历史**：复制或粘贴过的翻译结果会进入本地历史，方便回看；旧版本留下的改写记录仍可显示。
-- **配置比较细，但日常切换不必进 Preferences**：可以在扩展里直接选择全部 provider 或单个 provider、模型档位、具体 provider 模型、朗读 provider/model、翻译风格、提示词场景、OCR engine 和自定义 prompt。
+- **默认模型与运行时选择分层**：`Settings` / Preferences 管稳定默认值，包括翻译与截图翻译共用的默认 provider/model；Action Panel 管当前任务里的 provider 范围、具体模型、朗读 provider/model、翻译风格、提示词场景、OCR engine 和自定义 prompt。
 
 请注意，法律文本、学术文本、合同、公开发布内容和高风险材料仍然需要人工核验。模型输出可能误解上下文、遗漏限定语，OCR 也可能识别错字。
 
