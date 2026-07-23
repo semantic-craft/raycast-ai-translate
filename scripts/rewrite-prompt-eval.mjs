@@ -2,6 +2,7 @@
 import { mkdir, writeFile } from "node:fs/promises";
 import path from "node:path";
 import { createJiti } from "jiti";
+import { escapeMarkdownTableCell } from "./markdown-table.mjs";
 
 const jiti = createJiti(import.meta.url);
 const { generateWithProvider } = await jiti.import("../src/providers.ts");
@@ -304,7 +305,7 @@ async function writeNoKeyReport(outputPath) {
     "",
     "| Sample | Source | Baseline | Candidate A | Candidate B | Notes |",
     "| --- | --- | --- | --- | --- | --- |",
-    ...samples.map((sample) => `| ${sample.label} | ${escapeTable(sample.text)} |  |  |  |  |`),
+    ...samples.map((sample) => `| ${sample.label} | ${escapeMarkdownTableCell(sample.text)} |  |  |  |  |`),
     "",
     "Rubric: Native English, Intent fidelity, No Chinese calque, Direct utterance, Register fit, No unsupported addition, Brevity. Score each item 1-5.",
   ];
@@ -358,8 +359,4 @@ async function writeReport(outputPath, { config, startedAt, results }) {
 
   await mkdir(path.dirname(outputPath), { recursive: true });
   await writeFile(outputPath, `${lines.join("\n")}\n`, "utf8");
-}
-
-function escapeTable(value) {
-  return value.replace(/\|/g, "\\|").replace(/\n/g, "<br>");
 }
