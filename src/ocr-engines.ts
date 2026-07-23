@@ -564,6 +564,7 @@ function getOCRTimeoutMs(preferences: ExtensionPreferences): number {
 }
 
 function hashText(text: string): string {
+  // This is a cache-key fingerprint, not a stored password verifier.
   return createHash("sha256").update(text).digest("hex").slice(0, 16);
 }
 
